@@ -1,6 +1,29 @@
 use numpy::ndarray::{ArrayD, ArrayViewD, ArrayViewMutD};
 use numpy::{IntoPyArray, PyArrayDyn, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python, wrap_pyfunction};
+use pyo3::prelude::*;
+
+#[pyclass]
+#[derive(Debug, Clone)]
+struct ChromaCrossSimilarity {
+    #[pyo3(get)]
+    otiBinary: bool,
+    frameStackSize: i32,
+}
+
+
+#[pymethods]
+impl ChromaCrossSimilarity {
+    #[new]
+    fn new(otiBinary: bool, frameStackSize: i32,) -> Self {
+        ChromaCrossSimilarity{otiBinary, frameStackSize}
+    }
+}
+
+#[pyclass]
+struct Integer{
+    inner: i32
+}
 
 #[pymodule]
 fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
@@ -14,23 +37,23 @@ fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
         x *= a;
     }
 
-    fn chroma_cross_similarity(mut x: ArrayViewD<'_, f64>, mut y: ArrayViewD<'_, f64>) -> ArrayD<f64> {
-        4.0 * &x
-    }
+    // fn chroma_cross_similarity(mut x: ArrayViewD<'_, f64>, mut y: ArrayViewD<'_, f64>) -> ArrayD<f64> {
+    //     4.0 * &x
+    // }
 
     // wrapper of `chroma_cross_similarity`
-    #[pyfn(m)]
-    #[pyo3(name = "ChromaCrossSimilarity")]
-    fn chroma_cross_similarity_py<'py>(
-        py: Python<'py>,
-        x: PyReadonlyArrayDyn<f64>,
-        y: PyReadonlyArrayDyn<f64>,
-    ) -> &'py PyArrayDyn<f64> {
-        let x = x.as_array();
-        let y = y.as_array();
-        let z = chroma_cross_similarity(x, y);
-        z.into_pyarray(py)
-    }
+    // #[pyfn(m)]
+    // #[pyo3(name = "ChromaCrossSimilarity")]
+    // fn chroma_cross_similarity_py<'py>(
+    //     py: Python<'py>,
+    //     x: PyReadonlyArrayDyn<f64>,
+    //     y: PyReadonlyArrayDyn<f64>,
+    // ) -> &'py PyArrayDyn<f64> {
+    //     let x = x.as_array();
+    //     let y = y.as_array();
+    //     let z = chroma_cross_similarity(x, y);
+    //     z.into_pyarray(py)
+    // }
 
     // wrapper of `axpy`
     #[pyfn(m)]
@@ -54,6 +77,7 @@ fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
         let x = unsafe { x.as_array_mut() };
         mult(a, x);
     }
+    m.add_class::<ChromaCrossSimilarity>()?;
 
     Ok(())
 }

@@ -8,7 +8,6 @@ if __name__ == '__main__':
     query_hpcp = np.array([[0.3218126, 0.00541916, 0.26444072, 0.36874822, 1., 0.10472599, 0.05123469, 0.03934194, 0.07354275, 0.646091, 0.55201685, 0.03270169],
                            [0.07695414, 0.04679213, 0.56867135, 1., 0.10247268, 0.03653419, 0.03635696, 0.2443251, 0.2396715, 0.1190474, 0.8045795, 0.41822678]])
     print(reference_hpcp)
-    # print(ChromaCrossSimilarity(reference_hpcp, query_hpcp))
     test_object = ChromaCrossSimilarity(True, 1)
     print(test_object)
     print(test_object.method())

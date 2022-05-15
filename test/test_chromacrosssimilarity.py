@@ -44,8 +44,8 @@ class TestChromaCrossSimilarity(TestCase):
         self.assert_(True)
 
     def testEmpty(self):
-        self.assertComputeFails(ChromaCrossSimilarity(otiBinary=False, frameStackSize=1), [], [])
-        self.assertComputeFails(ChromaCrossSimilarity(otiBinary=True, frameStackSize=1), [], [])
+        self.assertComputeFails(ChromaCrossSimilarity(otiBinary=False, frameStackSize=1), np.array([]), np.array([])) #zmieniono na pusty numpy
+        self.assertComputeFails(ChromaCrossSimilarity(otiBinary=True, frameStackSize=1), np.array([]), np.array([])) #zmieniono na pusty numpy
 
     def testRegressionStandard(self):
         """Test standard ChromaCrossSimilarity algo rqa method with 'oti=True'"""

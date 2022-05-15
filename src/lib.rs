@@ -1,29 +1,85 @@
-use numpy::ndarray::{ArrayD, ArrayViewD, ArrayViewMutD};
-use numpy::{IntoPyArray, PyArrayDyn, PyReadonlyArrayDyn};
-use pyo3::{pymodule, types::PyModule, PyResult, Python, wrap_pyfunction};
+use numpy::ndarray::{arr2, Array, ArrayD, ArrayView2, ArrayViewD, ArrayViewMutD, Ix2};
+use numpy::{array, IntoPyArray, PyArray2, PyArrayDyn, PyReadonlyArray2, PyReadonlyArrayDyn};
+use pyo3::{pymodule, types::PyModule, PyResult, Python};
 use pyo3::prelude::*;
 
-#[pyclass]
-#[derive(Debug, Clone)]
+#[pyclass(subclass)]
+struct Algorithm {
+    #[pyo3(get)]
+    processingMode: usize,
+    // processingMode: String,
+}
+
+#[pymethods]
+impl Algorithm {
+    #[new]
+    fn new() -> Self {
+        Algorithm { processingMode: 1 }
+        // Algorithm { processingMode: String::from("Standard") }
+    }
+
+    pub fn method(&self) -> PyResult<usize> {
+        Ok(self.processingMode)
+    }
+}
+
+#[pyclass(extends=Algorithm, subclass)]
 struct ChromaCrossSimilarity {
     #[pyo3(get)]
     otiBinary: bool,
     frameStackSize: i32,
 }
 
-
 #[pymethods]
 impl ChromaCrossSimilarity {
     #[new]
-    fn new(otiBinary: bool, frameStackSize: i32,) -> Self {
-        ChromaCrossSimilarity{otiBinary, frameStackSize}
+    fn new(otiBinary: bool, frameStackSize: i32) -> (Self, Algorithm) {
+        (ChromaCrossSimilarity{otiBinary, frameStackSize}, Algorithm::new())
+    }
+
+    // fn compute(&mut self, py_args: &PyTuple) -> PyResult<String> {
+    //     Ok(format!(
+    //         "py_args={:?}",
+    //         py_args
+    //     ))
+    // }
+
+    // wrapper of `chroma_cross_similarity`
+    // #[pyo3(name = "compute")]
+    fn compute<'py>(&self,
+                       py: Python<'py>,
+                       x: PyReadonlyArrayDyn<f64>,
+                       y: PyReadonlyArrayDyn<f64>,
+    ) -> &'py PyArray2<f64> {
+        let x = x.as_array();
+        let y = y.as_array();
+        let z = compute_internal(x,y);
+        z.into_pyarray(py)
     }
 }
 
-#[pyclass]
-struct Integer{
-    inner: i32
+fn compute_internal (x: ArrayViewD<'_, f64>, y: ArrayViewD<'_, f64>) -> Array<f64, Ix2> {
+    return array!([x[[1,0]] + y[[0,0]]])
 }
+
+//
+// #[pyclass]
+// #[derive(Debug, Clone)]
+// struct ChromaCrossSimilarity {
+//     #[pyo3(get)]
+//     otiBinary: bool,
+//     frameStackSize: i32,
+// }
+//
+//
+// #[pymethods]
+// impl ChromaCrossSimilarity {
+//     #[new]
+//     fn new(otiBinary: bool, frameStackSize: i32,) -> Self {
+//         ChromaCrossSimilarity{otiBinary, frameStackSize}
+//     }
+// }
+
 
 #[pymodule]
 fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {

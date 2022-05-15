@@ -9,4 +9,12 @@ if __name__ == '__main__':
                            [0.07695414, 0.04679213, 0.56867135, 1., 0.10247268, 0.03653419, 0.03635696, 0.2443251, 0.2396715, 0.1190474, 0.8045795, 0.41822678]])
     print(reference_hpcp)
     # print(ChromaCrossSimilarity(reference_hpcp, query_hpcp))
-    print(ChromaCrossSimilarity(True, 1))
+    test_object = ChromaCrossSimilarity(True, 1)
+    print(test_object)
+    print(test_object.method())
+    print(test_object.otiBinary)
+    print(test_object.processingMode)
+    args = (reference_hpcp, query_hpcp)
+    print(test_object.compute(*args))
+    # print(reference_hpcp)
+

@@ -3,6 +3,7 @@ use numpy::{array, IntoPyArray, PyArray2, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 use pyo3::prelude::*;
 use pyo3::create_exception;
+use pyo3::impl_::pyfunction::wrap_pyfunction;
 
 
 #[pyclass(subclass)]
@@ -56,6 +57,28 @@ impl ChromaCrossSimilarity {
         let z = compute_internal(x,y);
         z.into_pyarray(py)
     }
+
+    // fn check<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
+    //                 py: Python<'py>,
+    //                 x: PyReadonlyArrayDyn<f64>,
+    // ) -> &'py PyResult<i32> {
+    //     match x[0][0] {
+    //         0 => Ok(x[0][0])
+    //         _ => Err(EssentiaException)
+    //     }
+    //
+    //     // z.into_pyarray(py)
+    // }
+
+}
+
+
+#[pyfunction]
+fn divide(a: i32, b: i32) -> PyResult<i32> {
+    match a.checked_div(b) {
+        Some(q) => Ok(q),
+        None => Err(EssentiaException::new_err("division by zero")),
+    }
 }
 
 fn compute_internal (x: ArrayViewD<'_, f64>, y: ArrayViewD<'_, f64>) -> Array<f64, Ix2> {
@@ -64,9 +87,32 @@ fn compute_internal (x: ArrayViewD<'_, f64>, y: ArrayViewD<'_, f64>) -> Array<f6
 
 create_exception!(essentia_rust, EssentiaException, pyo3::exceptions::PyException);
 
+
 #[pymodule]
 fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<ChromaCrossSimilarity>()?;
     m.add("EssentiaException", _py.get_type::<EssentiaException>())?;
+    m.add_function(wrap_pyfunction!(divide, _py).unwrap())?;
+    // m.add_function(wrap_pyfunction!(<ChromaCrossSimilarity as Trait>::divide, _py).unwrap())?;
     Ok(())
 }
+
+//
+// use pyo3::exceptions::PyZeroDivisionError;
+// use pyo3::prelude::*;
+//
+// #[pyfunction]
+// fn divide(a: i32, b: i32) -> PyResult<i32> {
+//     match a.checked_div(b) {
+//         Some(q) => Ok(q),
+//         None => Err(PyZeroDivisionError::new_err("division by zero")),
+//     }
+// }
+//
+// fn main(){
+//     Python::with_gil(|py|{
+//         let fun = pyo3::wrap_pyfunction!(divide, py).unwrap();
+//         fun.call1((1,0)).unwrap_err();
+//         fun.call1((1,1)).unwrap();
+//     });
+// }

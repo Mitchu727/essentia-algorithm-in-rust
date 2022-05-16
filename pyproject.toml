@@ -1,3 +1,21 @@
+[tool.poetry]
+name = "essentia-rust"
+version = "0.1.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pygame = "^2.1.2"
+numpy = "^1.22.3"
+maturin = "^0.12.11"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+black = "^22.3.0"
+flake8 = "^4.0.1"
+flake8-bugbear = "^22.3.23"
+
 [build-system]
 requires = ["maturin>=0.12,<0.13"]
 build-backend = "maturin"

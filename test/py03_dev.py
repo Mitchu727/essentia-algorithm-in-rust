@@ -1,7 +1,7 @@
 import numpy as np
 from essentia_rust import ChromaCrossSimilarity
 from essentia_rust import EssentiaException
-from essentia_rust import divide
+
 
 if __name__ == '__main__':
     reference_hpcp = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],

@@ -1,4 +1,4 @@
-use numpy::ndarray::{Array, ArrayViewD, Ix2};
+use numpy::ndarray::{Array, ArrayViewD, Ix, Ix2};
 use numpy::{array, IntoPyArray, PyArray2, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 use pyo3::prelude::*;
@@ -70,14 +70,26 @@ impl ChromaCrossSimilarity {
     //     // z.into_pyarray(py)
     // }
 
+    fn method<'py>(&self, py: Python<'py>, x: PyReadonlyArrayDyn<f64>) -> PyResult<f64> {
+        let x = x.as_array();
+        if (x.ndim()) == 2 {
+            Err(EssentiaException::new_err("sth went wrong"))
+        } else { Ok(x[[0,0]]) }
+    }
+
+
 }
 
 
 #[pyfunction]
-fn divide(a: i32, b: i32) -> PyResult<i32> {
-    match a.checked_div(b) {
-        Some(q) => Ok(q),
-        None => Err(EssentiaException::new_err("division by zero")),
+fn divide(a: f64, b: f64) -> PyResult<f64> {
+    // match a.checked_div(b) {
+    //     Some(q) => Ok(q),
+    //     None => Err(EssentiaException::new_err("division by zero")),
+    // }
+    match a {
+        0. => Ok(a),
+        _ => Err(EssentiaException::new_err("division by zero")),
     }
 }
 

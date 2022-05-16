@@ -17,7 +17,7 @@ if __name__ == '__main__':
     args = (reference_hpcp, query_hpcp)
     print(test_object.compute(*args))
     print(test_object(*args))
-    print(divide(5,0))
+    print(test_object.method(query_hpcp))
     # print(reference_hpcp)
     # raise EssentiaException("sth went wrong")
 

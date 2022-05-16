@@ -1,7 +1,11 @@
-use numpy::ndarray::{arr2, Array, ArrayD, ArrayView2, ArrayViewD, ArrayViewMutD, Ix2};
-use numpy::{array, IntoPyArray, PyArray2, PyArrayDyn, PyReadonlyArray2, PyReadonlyArrayDyn};
+use numpy::ndarray::{Array, ArrayBase, ArrayViewD, Dim, Ix2, OwnedRepr};
+use numpy::{array, IntoPyArray, PyArray, PyArray2, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
+use pyo3::callback::IntoPyCallbackOutput;
 use pyo3::prelude::*;
+use pyo3::create_exception;
+use pyo3::impl_::pyfunction::wrap_pyfunction;
+
 
 #[pyclass(subclass)]
 struct Algorithm {
@@ -27,8 +31,20 @@ struct ChromaCrossSimilarity {
 #[pymethods]
 impl ChromaCrossSimilarity {
     #[new]
+    #[args(
+    otiBinary = "true",
+    frameStackSize = "1"
+    )]
     fn new(otiBinary: bool, frameStackSize: i32) -> (Self, Algorithm) {
         (ChromaCrossSimilarity{otiBinary, frameStackSize}, Algorithm::new())
+    }
+
+    fn __call__<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
+                    py: Python<'py>,
+                    x: PyReadonlyArrayDyn<f64>,
+                    y: PyReadonlyArrayDyn<f64>,
+    ) -> &'py PyArray2<f64> {
+        self.compute(py,x,y)
     }
 
     // wrapper of `compute_internal`
@@ -42,15 +58,35 @@ impl ChromaCrossSimilarity {
         let z = compute_internal(x,y);
         z.into_pyarray(py)
     }
+
+    fn method<'py>(&self, py: Python<'py>, x: PyReadonlyArrayDyn<f64>) -> Result<&'py PyArray<f64, Ix2>, PyErr> {
+        let x = x.as_array();
+        if (x.ndim()) == 2 {
+            Err(EssentiaException::new_err("sth went wrong"))
+        } else { Ok(array!([x[[1,0]]]).into_pyarray(py)) }
+    }
+
+    // fn method<'py>(&self, py: Python<'py>, x: PyReadonlyArrayDyn<f64>) -> &'py PyArray2<f64> {
+    //     let x = x.as_array();
+    //     if (x.ndim()) == 2 {
+    //         EssentiaException::new_err("sth went wrong").restore(py);
+    //     };
+    //     array!([x[[0,0]]]).into_pyarray(py)
+    // }
+
 }
+
 
 fn compute_internal (x: ArrayViewD<'_, f64>, y: ArrayViewD<'_, f64>) -> Array<f64, Ix2> {
     return array!([x[[1,0]] + y[[0,0]]])
 }
 
+create_exception!(essentia_rust, EssentiaException, pyo3::exceptions::PyException);
+
 
 #[pymodule]
 fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<ChromaCrossSimilarity>()?;
+    m.add("EssentiaException", _py.get_type::<EssentiaException>())?;
     Ok(())
 }

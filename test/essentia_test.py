@@ -201,7 +201,7 @@ class TestCase(BaseTestCase):
 
 def almostEqualArray(found, expected, precision):
     return False
-
-
-def almostEqualAudioArray(found, expected, precision):
-    return False
+#
+#
+# def almostEqualAudioArray(found, expected, precision):
+#     return False

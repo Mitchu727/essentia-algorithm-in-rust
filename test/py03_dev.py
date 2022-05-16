@@ -1,5 +1,7 @@
 import numpy as np
 from essentia_rust import ChromaCrossSimilarity
+from essentia_rust import EssentiaException
+
 
 if __name__ == '__main__':
     reference_hpcp = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
@@ -10,10 +12,12 @@ if __name__ == '__main__':
     print(reference_hpcp)
     test_object = ChromaCrossSimilarity(True, 1)
     print(test_object)
-    print(test_object.method())
     print(test_object.otiBinary)
     print(test_object.processingMode)
     args = (reference_hpcp, query_hpcp)
     print(test_object.compute(*args))
+    print(test_object(*args))
+    print(test_object.method(query_hpcp))
     # print(reference_hpcp)
+    # raise EssentiaException("sth went wrong")
 

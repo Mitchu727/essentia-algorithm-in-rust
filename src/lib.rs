@@ -1,7 +1,9 @@
-use numpy::ndarray::{arr2, Array, ArrayD, ArrayView2, ArrayViewD, ArrayViewMutD, Ix2};
-use numpy::{array, IntoPyArray, PyArray2, PyArrayDyn, PyReadonlyArray2, PyReadonlyArrayDyn};
+use numpy::ndarray::{Array, ArrayViewD, Ix2};
+use numpy::{array, IntoPyArray, PyArray2, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 use pyo3::prelude::*;
+use pyo3::create_exception;
+
 
 #[pyclass(subclass)]
 struct Algorithm {
@@ -63,9 +65,11 @@ fn compute_internal (x: ArrayViewD<'_, f64>, y: ArrayViewD<'_, f64>) -> Array<f6
     return array!([x[[1,0]] + y[[0,0]]])
 }
 
+create_exception!(essentia_rust, EssentiaException, pyo3::exceptions::PyException);
 
 #[pymodule]
 fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<ChromaCrossSimilarity>()?;
+    m.add("EssentiaException", _py.get_type::<EssentiaException>())?;
     Ok(())
 }

@@ -25,7 +25,9 @@ import sys
 import numpy as np
 # from essentia._essentia import almostEqualArray
 
-EssentiaException = RuntimeError
+# EssentiaException = RuntimeError
+
+from essentia_rust import EssentiaException
 
 # any and all are only defined in python >= 2.5
 if int(sys.version.split()[0].split('.')[1]) < 5:

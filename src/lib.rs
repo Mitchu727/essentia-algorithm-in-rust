@@ -42,10 +42,7 @@ impl ChromaCrossSimilarity {
                     x: PyReadonlyArrayDyn<f64>,
                     y: PyReadonlyArrayDyn<f64>,
     ) -> &'py PyArray2<f64> {
-        let x = x.as_array();
-        let y = y.as_array();
-        let z = compute_internal(x,y);
-        z.into_pyarray(py)
+        self.compute(py,x,y)
     }
 
     // wrapper of `compute_internal`

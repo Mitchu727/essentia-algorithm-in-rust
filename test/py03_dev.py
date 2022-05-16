@@ -10,7 +10,6 @@ if __name__ == '__main__':
     print(reference_hpcp)
     test_object = ChromaCrossSimilarity(True, 1)
     print(test_object)
-    print(test_object.method())
     print(test_object.otiBinary)
     print(test_object.processingMode)
     args = (reference_hpcp, query_hpcp)

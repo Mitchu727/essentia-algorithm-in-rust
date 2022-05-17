@@ -37,6 +37,7 @@ if int(sys.version.split()[0].split('.')[1]) < 5:
                 return False
         return True
 
+
     def any(l):
         for elem in l:
             if elem:
@@ -50,11 +51,14 @@ def filedir():
     from os.path import dirname
     return dirname(callingFile)
 
+
 def readValue(filename):
     return float(open(filename).read())
 
+
 def readVector(filename):
-    return [ float(x) for x in open(filename).read().strip().split() ]
+    return [float(x) for x in open(filename).read().strip().split()]
+
 
 def readVectorTwoColumns(filename):
     vector = []
@@ -63,13 +67,14 @@ def readVectorTwoColumns(filename):
             vector.append(float(x))
     return vector
 
+
 def readComplexVector(filename):
     values = open(filename).read().strip().split()
-    values = [ v.replace('(', '') for v in values ]
-    values = [ v.replace(')', 'j') for v in values ]
-    values = [ v.replace(',-', '-') for v in values ]
-    values = [ v.replace(',', '+') for v in values ]
-    return [ complex(v) for v in values ]
+    values = [v.replace('(', '') for v in values]
+    values = [v.replace(')', 'j') for v in values]
+    values = [v.replace(',-', '-') for v in values]
+    values = [v.replace(',', '+') for v in values]
+    return [complex(v) for v in values]
 
 
 def readMatrix(filename):
@@ -110,44 +115,44 @@ class TestCase(BaseTestCase):
                 else:
                     self.assertEqual(val1, val2)
 
-    def assertAlmostEqualFixedPrecision(self, found, expected, digits = 0):
+    def assertAlmostEqualFixedPrecision(self, found, expected, digits=0):
         BaseTestCase.assertAlmostEqual(self, found, expected, digits)
 
-    def assertAlmostEqualVectorFixedPrecision(self, found, expected, digits = 0):
+    def assertAlmostEqualVectorFixedPrecision(self, found, expected, digits=0):
         self.assertEqual(len(found), len(expected))
         for val1, val2 in zip(found, expected):
             self.assertAlmostEqualFixedPrecision(val1, val2, digits)
 
-    def assertAlmostEqual(self, found, expected, precision = 1e-7):
+    def assertAlmostEqual(self, found, expected, precision=1e-7):
         if expected == 0:
             diff = abs(found)
         elif found == 0:
             diff = abs(expected)
         else:
             diff = abs((expected - found) / abs(expected))
-        self.assert_(diff <= precision,
+        self.assertTrue(diff <= precision,
                      """Difference is %e while allowed relative error is %e""" % (diff, precision))
 
-    def assertAlmostEqualVector(self, found, expected, precision = 1e-7):
+    def assertAlmostEqualVector(self, found, expected, precision=1e-7):
         # we can use the optimized version if the two arrays are 1D numpy float arrays
         if isinstance(found, numpy.ndarray) and \
-           isinstance(expected, numpy.ndarray) and \
-           found.ndim == 1 and expected.ndim == 1 and \
-           found.dtype == expected.dtype and \
-           found.dtype == numpy.float32:
+                isinstance(expected, numpy.ndarray) and \
+                found.ndim == 1 and expected.ndim == 1 and \
+                found.dtype == expected.dtype and \
+                found.dtype == numpy.float32:
             return self.assertTrue(almostEqualArray(found, expected, precision))
 
         self.assertEqual(len(found), len(expected))
         for val1, val2 in zip(found, expected):
             self.assertAlmostEqual(val1, val2, precision)
 
-    def assertAlmostEqualMatrix(self, found, expected, precision = 1e-7):
+    def assertAlmostEqualMatrix(self, found, expected, precision=1e-7):
         # we can use the optimized version if the two arrays are 2D numpy float arrays
         if isinstance(found, numpy.ndarray) and \
-           isinstance(expected, numpy.ndarray) and \
-           found.ndim == 2 and expected.ndim == 2 and \
-           found.dtype == expected.dtype and \
-           found.dtype == numpy.float64:
+                isinstance(expected, numpy.ndarray) and \
+                found.ndim == 2 and expected.ndim == 2 and \
+                found.dtype == expected.dtype and \
+                found.dtype == numpy.float64:
             return self.assertTrue(almostEqualArray(found, expected, precision))
 
         self.assertEqual(len(found), len(expected))
@@ -156,29 +161,27 @@ class TestCase(BaseTestCase):
             self.assertEqual(len(v1), len(v2))
             self.assertAlmostEqualVector(np.array(v1).flatten(), np.array(v2).flatten(), precision)
 
-
-    def assertAlmostEqualAbs(self, found, expected, precision = 0.1):
+    def assertAlmostEqualAbs(self, found, expected, precision=0.1):
         diff = abs(expected - found)
         self.assert_(diff <= precision, 'Difference is %e while allowed absolute error is %e' % (diff, precision))
 
-    def assertAlmostEqualVectorAbs(self, found, expected, precision = 0.1):
+    def assertAlmostEqualVectorAbs(self, found, expected, precision=0.1):
         self.assertEqual(len(found), len(expected))
         for val1, val2 in zip(found, expected):
             self.assertAlmostEqualAbs(val1, val2, precision)
 
-
-    def assertAlmostEqualAudio(self, found, expected, precision = 1e-7):
+    def assertAlmostEqualAudio(self, found, expected, precision=1e-7):
         # we can use the optimized version if the two arrays are 1D numpy float arrays
         if isinstance(found, numpy.ndarray) and \
-            isinstance(expected, numpy.ndarray) and \
-            found.ndim == 1 and expected.ndim == 1 and \
-            found.dtype == expected.dtype and \
-            found.dtype == numpy.float32:
-              return self.assertTrue(almostEqualAudioArray(found, expected, precision))
+                isinstance(expected, numpy.ndarray) and \
+                found.ndim == 1 and expected.ndim == 1 and \
+                found.dtype == expected.dtype and \
+                found.dtype == numpy.float32:
+            return self.assertTrue(almostEqualAudioArray(found, expected, precision))
 
         self.assertEqual(len(found), len(expected))
         for val1, val2 in zip(found, expected):
-          self.assertAlmostEqualAudio(val1, val2, precision)
+            self.assertAlmostEqualAudio(val1, val2, precision)
 
     def assertConfigureFails(self, algo, params):
         conf = lambda: algo.configure(**params)

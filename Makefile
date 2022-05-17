@@ -13,3 +13,13 @@ dev: install
 test: dev
 	cargo test
 	poetry run pytest
+
+docs: dev
+	cargo doc --open --document-private-items
+
+lint:
+	cargo clippy
+	poetry run flake8
+
+format:
+	cargo fmt

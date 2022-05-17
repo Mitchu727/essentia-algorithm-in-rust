@@ -223,3 +223,8 @@ def almostEqualArray(found, expected, precision):
 
 def almostEqualAudioArray(found, expected, precision):
     return False
+
+
+TestLoader.__test__ = False
+TestSuite.__test__ = False
+TestResult.__test__ = False

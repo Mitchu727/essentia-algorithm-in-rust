@@ -1,10 +1,8 @@
-use numpy::ndarray::{Array, ArrayBase, ArrayViewD, Dim, Ix2, OwnedRepr};
-use numpy::{array, IntoPyArray, PyArray, PyArray2, PyReadonlyArrayDyn};
+use numpy::ndarray::{Array, ArrayViewD, Ix2};
+use numpy::{array, IntoPyArray, PyArray, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
-use pyo3::callback::IntoPyCallbackOutput;
 use pyo3::prelude::*;
 use pyo3::create_exception;
-use pyo3::impl_::pyfunction::wrap_pyfunction;
 
 
 #[pyclass(subclass)]

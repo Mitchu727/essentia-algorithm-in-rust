@@ -1,10 +1,8 @@
-use numpy::ndarray::{Array, ArrayBase, ArrayViewD, Dim, Ix2, OwnedRepr};
-use numpy::{array, IntoPyArray, PyArray, PyArray2, PyReadonlyArrayDyn};
+use numpy::ndarray::{Array, ArrayViewD, Ix2};
+use numpy::{array, IntoPyArray, PyArray, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
-use pyo3::callback::IntoPyCallbackOutput;
 use pyo3::prelude::*;
 use pyo3::create_exception;
-use pyo3::impl_::pyfunction::wrap_pyfunction;
 
 
 #[pyclass(subclass)]
@@ -62,38 +60,6 @@ impl ChromaCrossSimilarity {
         Ok(z.into_pyarray(py))
     }
 
-    // fn check_dimensions<'py>(&self,
-    //                      py: Python<'py>,
-    //                      x: PyReadonlyArrayDyn<f64>,
-    //                      y: PyReadonlyArrayDyn<f64>,
-    // ) -> Result<&'py PyArray<f64, Ix2>, PyErr> {
-    //     let x = x.as_array();
-    //     if x.ndim() != 2 || y.ndim() != 2 {
-    //         Err(EssentiaException::new_err("sth went wrong"))
-    //     } else { Ok(()) }
-    // }
-
-    // fn method<'py>(&self, py: Python<'py>, x: PyReadonlyArrayDyn<f64>) -> &'py PyArray2<f64> {
-    //     let x = x.as_array();
-    //     if (x.ndim()) == 2 {
-    //         EssentiaException::new_err("sth went wrong").restore(py);
-    //     };
-    //     array!([x[[0,0]]]).into_pyarray(py)
-    // }
-
-}
-
-
-#[pyfunction]
-fn divide(a: f64, b: f64) -> PyResult<f64> {
-    // match a.checked_div(b) {
-    //     Some(q) => Ok(q),
-    //     None => Err(EssentiaException::new_err("division by zero")),
-    // }
-    match a {
-        0. => Ok(a),
-        _ => Err(EssentiaException::new_err("division by zero")),
-    }
 }
 
 fn compute_internal (x: ArrayViewD<'_, f64>, y: ArrayViewD<'_, f64>) -> Array<f64, Ix2> {

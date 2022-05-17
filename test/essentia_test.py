@@ -147,7 +147,7 @@ class TestCase(BaseTestCase):
            isinstance(expected, numpy.ndarray) and \
            found.ndim == 2 and expected.ndim == 2 and \
            found.dtype == expected.dtype and \
-           found.dtype == numpy.float32:
+           found.dtype == numpy.float64:
             return self.assertTrue(almostEqualArray(found, expected, precision))
 
         self.assertEqual(len(found), len(expected))
@@ -202,8 +202,21 @@ class TestCase(BaseTestCase):
 
 
 def almostEqualArray(found, expected, precision):
+    assert np.shape(found) == np.shape(expected)
+
+    for i in range(np.shape(found)[0]):
+        for j in range(np.shape(found)[1]):
+            x = found[i][j]
+            y = expected[i][j]
+            if y == 0:
+                diff = abs(x)
+            elif x == 0:
+                diff = abs(y)
+            else:
+                diff = abs((y - x) / abs(y))
+            if diff <= precision:
+                return False
+
+
+def almostEqualAudioArray(found, expected, precision):
     return False
-#
-#
-# def almostEqualAudioArray(found, expected, precision):
-#     return False

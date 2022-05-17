@@ -6,7 +6,6 @@ authors = []
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pygame = "^2.1.2"
 numpy = "^1.22.3"
 maturin = "^0.12.11"
 

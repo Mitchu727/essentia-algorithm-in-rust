@@ -21,6 +21,7 @@ import numpy as np
 
 from essentia_rust import ChromaCrossSimilarity
 
+
 class TestChromaCrossSimilarity(TestCase):
 
     # hpcp matrix of a short query song segment (2 frames) computed using essentia hpcp algorithm
@@ -41,7 +42,7 @@ class TestChromaCrossSimilarity(TestCase):
                                     [1., 0., 0.]])
 
     def testPass(self):
-        self.assert_(True)
+        self.assertTrue(True)
 
     def testEmpty(self):
         self.assertComputeFails(ChromaCrossSimilarity(otiBinary=False, frameStackSize=1), np.array([]), np.array([])) #zmieniono na pusty numpy

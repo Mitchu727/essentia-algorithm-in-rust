@@ -56,14 +56,16 @@ impl ChromaCrossSimilarity {
         }
         let x = x.as_array();
         let y = y.as_array();
-        let z = compute_internal(x,y);
+        let z = self.compute_internal(x,y);
         Ok(z.into_pyarray(py))
     }
 
 }
 
-fn compute_internal (x: ArrayViewD<'_, f64>, y: ArrayViewD<'_, f64>) -> Array<f64, Ix2> {
-    return array!([x[[1,0]] + y[[0,0]]])
+impl ChromaCrossSimilarity{
+    fn compute_internal (&self, x: ArrayViewD<'_, f64>, y: ArrayViewD<'_, f64>) -> Array<f64, Ix2> {
+        return array!([x[[1,0]] + y[[0,0]]])
+    }
 }
 
 create_exception!(essentia_rust, EssentiaException, pyo3::exceptions::PyException);
@@ -74,4 +76,24 @@ fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<ChromaCrossSimilarity>()?;
     m.add("EssentiaException", _py.get_type::<EssentiaException>())?;
     Ok(())
+}
+
+// Tests -------------------------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn simple_test() {
+        let test_object = ChromaCrossSimilarity{
+            otiBinary: true,
+            frameStackSize: 1,
+        };
+        let x = array!([0.,1.],[2.,3.]);
+        let y = array!([4.,5.],[6.,7.]);
+        let outcome = test_object.compute_internal(x.view().into_dyn(),y.view().into_dyn());
+        assert_eq!(array!([6.0]), outcome)
+    }
+
 }

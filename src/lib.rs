@@ -73,7 +73,10 @@ impl ChromaCrossSimilarity{
         if self.otiBinary {
             let stack_frames_a = stack_chroma_frames(from_ndarray_to_vecs(query_feature), self.frameStackSize, self.frame_stack_stride);
             let stack_frames_b = stack_chroma_frames(from_ndarray_to_vecs(reference_feature), self.frameStackSize, self.frame_stack_stride);
+            // print!("{:?}", stack_frames_a[0]);
+            // print!("{:?}", stack_frames_a[1]);
             return chroma_cross_binary_sim_matrix(stack_frames_a, stack_frames_b, self.noti, mathc_coef, mismatch_coef)
+            // return from_vecs_to_ndarray(from_ndarray_to_vecs(query_feature))
         }
         // else {  }
         return array!([query_feature[[1,0]] + reference_feature[[0,0]]])
@@ -100,10 +103,10 @@ fn chroma_cross_binary_sim_matrix(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64
             // };
             value_at_shifts.clear();
             if oti_index.0 == 0 || oti_index.0 == 1 {
-                 sim_matrix[[j,i]] = match_coef
+                 sim_matrix[[i,j]] = match_coef
             }
             else {
-                sim_matrix[[j,i]] = mismatch_coef
+                sim_matrix[[i,j]] = mismatch_coef
             }
         }
     }
@@ -152,9 +155,9 @@ fn stack_chroma_frames(frames: Vec<Vec<f64>>, frame_stack_size: usize, frame_sta
         //     vec_array.push(array.slice(s![.., i]).)
         // }
         for (i, mut row) in array.axis_iter(Axis(0)).enumerate() {
-            let mut column_vector: Vec<f64>;
+            let mut column_vector = Vec::new();
             for (j, col) in row.iter().enumerate() {
-                column_vector.push(array[[i][j]]);
+                column_vector.push(array[[i,j]]);
             }
             vec_array.push(column_vector.to_vec());
             column_vector.clear();

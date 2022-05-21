@@ -41,6 +41,9 @@ class TestChromaCrossSimilarity(TestCase):
     expected_oti_simmatrix = np.array([[1., 0., 0.],
                                     [1., 0., 0.]])
 
+    expected_oti_simmatrix_shit = np.array([[2., 0., 0.],
+                                       [2., 0., 0.]])
+
     def testPass(self):
         self.assertTrue(True)
 

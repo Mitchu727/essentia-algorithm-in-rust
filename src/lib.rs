@@ -1,8 +1,9 @@
-use numpy::ndarray::{Array, Array1, Array2, ArrayView1, ArrayViewD, Axis, Ix, Ix2, stack};
-use numpy::{array, IntoPyArray, PyArray, PyReadonlyArrayDyn};
+use numpy::ndarray::{Array, Array1, Array2, ArrayView1, ArrayView2, ArrayViewD, Axis, Ix, Ix2, s, stack};
+use numpy::{array, dot, IntoPyArray, PyArray, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 use pyo3::prelude::*;
 use pyo3::create_exception;
+
 
 #[pyclass(subclass)]
 struct Algorithm {
@@ -66,18 +67,45 @@ impl ChromaCrossSimilarity {
 
 impl ChromaCrossSimilarity{
     fn compute_internal (&self, query_feature: ArrayViewD<'_, f64>, reference_feature: ArrayViewD<'_, f64>) -> Array<f64, Ix2> {
-        // if self.otiBinary {
-        //     let stack_frames_a = stack_chroma_frames(Array2(query_feature), self.frameStackSize as u32, self.frame_stack_stride);
-        //     let stack_frames_b = stack_chroma_frames(Array2(reference_feature), self.frameStackSize as u32, frame_stack_stride);
-        //     return chroma_cross_binary_sim_matrix(stack_frames_a, stack_frames_b, noti, math_coef, mismatch_coef)
-        // }
+        let mathc_coef = 1.;
+        let mismatch_coef = 0.;
+        if self.otiBinary {
+            let stack_frames_a = stack_chroma_frames(query_feature, self.frameStackSize, self.frame_stack_stride);
+            let stack_frames_b = stack_chroma_frames(reference_feature, self.frameStackSize, self.frame_stack_stride);
+            return chroma_cross_binary_sim_matrix(stack_frames_a, stack_frames_b, self.noti, mathc_coef, mismatch_coef)
+        }
         // else {  }
         return array!([query_feature[[1,0]] + reference_feature[[0,0]]])
 
     }
 }
 
-fn stack_chroma_frames(frames: Array2<f64>, frame_stack_size: usize, frame_stack_stride: usize) -> Array2<f64> {
+fn chroma_cross_binary_sim_matrix(chroma_a: Array2<f64>, chroma_b: Array2<f64>, n_shifts: u32, match_coef:f64, mismatch_coef: f64) -> Array<f64, Ix2> {
+    let mut value_at_shifts = Vec::new();
+    let mut oti_index;
+    let mut sim_matrix = Array::zeros((chroma_a.len_of(Axis(0)), 0..chroma_b.len_of(Axis(0))));
+    for i in 0..chroma_a.len_of(Axis(0)) {
+        for j in 0..chroma_b.len_of(Axis(0)) {
+            for k in 0..n_shifts {
+                let mut chroma_b_copy = chroma_b.slice(s![..,j]).to_vec();
+                chroma_b_copy.rotate_right(k as usize);
+                // value_at_shifts.push(chroma_a.slice(s![..,i]).dot(&chroma_b_copy));
+                value_at_shifts.push(1.);
+            }
+            oti_index = value_at_shifts.iter().max();
+            value_at_shifts.clear();
+            if oti_index == 0 || oti_index == 1 {
+                 sim_matrix[[j,i]] = match_coef
+            }
+            else {
+                sim_matrix[[j,i]] = mismatch_coef
+            }
+        }
+    }
+    return sim_matrix
+}
+
+fn stack_chroma_frames(frames: ArrayView2<f64>, frame_stack_size: usize, frame_stack_stride: usize) -> Array2<f64> {
     if frame_stack_size == 1 {
         return frames;
     }
@@ -89,9 +117,6 @@ fn stack_chroma_frames(frames: Array2<f64>, frame_stack_size: usize, frame_stack
     // }
     // let mut stacked_frames: Array2<f64> = Array::zeros((frames.len() - increment, frames.shape[0] * frameStackSize));
 
-    // VECTOR WAY
-    // let mut stacked_frames: Array2<f64>;
-    // let mut stack: ArrayView1<f64>;
     let mut stacked_frames = Vec::new();
     let mut stack = Vec::new();
     for i in (0..(frames.len() - increment)).step_by(frame_stack_stride) {
@@ -105,6 +130,7 @@ fn stack_chroma_frames(frames: Array2<f64>, frame_stack_size: usize, frame_stack
     }
     return from_vecs_to_ndarray(stacked_frames);
 }
+
     fn from_vecs_to_ndarray(vec_array :Vec<Vec<f64>>) -> Array2<f64> {
         let mut array = Array2::<f64>::default((vec_array.len(), vec_array[0].len()));
         for (i, mut row) in array.axis_iter_mut(Axis(0)).enumerate() {
@@ -113,6 +139,14 @@ fn stack_chroma_frames(frames: Array2<f64>, frame_stack_size: usize, frame_stack
             }
         }
         return array
+    }
+
+    fn from_ndarray_to_vecs(array: ArrayView2<f64>) -> Vec<Vec<f64>> {
+        vec_array = Vec::new();
+        for column in array.axis_iter(Axis(0)){
+            vec_array.push(array.column(i).to_vec())
+        }
+        return vec_array
     }
 
     // NUMPY WAY

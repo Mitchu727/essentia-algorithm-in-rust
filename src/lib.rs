@@ -1,4 +1,4 @@
-use numpy::ndarray::{Array, Array2, ArrayViewD, Axis, Ix, Ix2, s, ShapeBuilder};
+use numpy::ndarray::{Array, Array2, ArrayViewD, Axis, Ix2};
 use numpy::{array, IntoPyArray, PyArray, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 use pyo3::prelude::*;
@@ -27,6 +27,7 @@ struct ChromaCrossSimilarity {
     frameStackSize: usize,
     frame_stack_stride: usize,
     noti: u32,
+    oti: bool,
 
 }
 
@@ -38,7 +39,7 @@ impl ChromaCrossSimilarity {
     frameStackSize = "9",
     )]
     fn new(otiBinary: bool, frameStackSize: usize) -> (Self, Algorithm) {
-        (ChromaCrossSimilarity{otiBinary, frameStackSize, frame_stack_stride: 1, noti: 12}, Algorithm::new())
+        (ChromaCrossSimilarity{otiBinary, frameStackSize, frame_stack_stride: 1, noti: 12, oti: true}, Algorithm::new())
     }
 
     fn __call__<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
@@ -73,15 +74,79 @@ impl ChromaCrossSimilarity{
         if self.otiBinary {
             let stack_frames_a = stack_chroma_frames(from_ndarray_to_vecs(query_feature), self.frameStackSize, self.frame_stack_stride);
             let stack_frames_b = stack_chroma_frames(from_ndarray_to_vecs(reference_feature), self.frameStackSize, self.frame_stack_stride);
-            // print!("{:?}", stack_frames_a[0]);
-            // print!("{:?}", stack_frames_a[1]);
             return chroma_cross_binary_sim_matrix(stack_frames_a, stack_frames_b, self.noti, mathc_coef, mismatch_coef)
-            // return from_vecs_to_ndarray(from_ndarray_to_vecs(query_feature))
         }
-        // else {  }
-        return array!([query_feature[[1,0]] + reference_feature[[0,0]]])
+        else {
+            let query_feature_vecs = from_ndarray_to_vecs(query_feature);
+            let mut reference_feature_vecs = from_ndarray_to_vecs(reference_feature);
+            if self.oti {
+                let oti_idx = optimal_transposition_index(query_feature_vecs.to_vec(), reference_feature_vecs.to_vec(), self.noti);
+                rotate_chroma(&mut reference_feature_vecs, oti_idx as i32)
+            }
+            // let query_feature_stack = stack_chroma_frames(query_feature_vecs.to_vec(), self.frameStackSize, self.frame_stack_stride);
+            // let reference_feature_stack = stack_chroma_frames(reference_feature_vecs.to_vec(), self.frameStackSize, self.frame_stack_stride);
+            return from_vecs_to_ndarray(query_feature_vecs);
+        }
 
     }
+}
+
+fn rotate_chroma(input_matrix: &mut Vec<Vec<f64>>, oti: i32) {
+    // if (inputMatrix.empty())
+    // throw EssentiaException("rotateChroma: trying to rotate an empty matrix");
+    for i in 0..input_matrix.len() {
+        input_matrix[i].rotate_right(oti as usize)
+    }
+}
+
+fn optimal_transposition_index(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64>>, n_shifts: u32) -> usize {
+    let mut value_at_shifts = Vec::new();
+    let global_chroma_a= global_average_chroma(chroma_a);
+    let mut global_chroma_b = global_average_chroma(chroma_b);
+    let mut iter_idx = 0;
+    for i in 0..n_shifts {
+        global_chroma_b.rotate_right((i - iter_idx) as usize);
+        value_at_shifts.push(dot(&global_chroma_a, &global_chroma_b));
+        if i >= 1 {
+            iter_idx+=1;
+        }
+    }
+    return argmax(&value_at_shifts).0
+}
+
+fn global_average_chroma(input_feature: Vec<Vec<f64>>) -> Vec<f64> {
+    let mut global_chroma = sum_frames(input_feature);
+    normalize(&mut global_chroma);
+    return global_chroma;
+}
+
+fn normalize(array: &mut Vec<f64>) {
+    if array.is_empty() {
+        return
+    }
+    // let max_element = array.iter().max_by(|a, b| a.total_cmp(b));
+    let max_element = array.iter().copied().fold(f64::NAN, f64::max);
+    if max_element != 0. {
+        for i in 0..array.len() {
+            array[i] /= max_element;
+        }
+    }
+}
+
+
+fn sum_frames(frames: Vec<Vec<f64>>) -> Vec<f64> {
+    // if (frames.empty()) {
+    //     throw EssentiaException("sumFrames: trying to calculate sum of empty input frames");
+    // }
+    let number_of_frames = frames.len();
+    let vsize = frames[0].len();
+    let mut result = vec![0.; vsize];
+    for j in 0..vsize {
+        for i in 0..number_of_frames {
+            result[j] += frames[i][j]
+        }
+    }
+    return result
 }
 
 fn chroma_cross_binary_sim_matrix(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64>>, n_shifts: u32, match_coef:f64, mismatch_coef: f64) -> Array2<f64> {
@@ -154,9 +219,9 @@ fn stack_chroma_frames(frames: Vec<Vec<f64>>, frame_stack_size: usize, frame_sta
         // for i in array.axis_iter(Axis(0)){
         //     vec_array.push(array.slice(s![.., i]).)
         // }
-        for (i, mut row) in array.axis_iter(Axis(0)).enumerate() {
+        for (i, row) in array.axis_iter(Axis(0)).enumerate() {
             let mut column_vector = Vec::new();
-            for (j, col) in row.iter().enumerate() {
+            for (j, _col) in row.iter().enumerate() {
                 column_vector.push(array[[i,j]]);
             }
             vec_array.push(column_vector.to_vec());
@@ -200,6 +265,7 @@ mod tests {
             frameStackSize: 1,
             frame_stack_stride: 9,
             noti: 12,
+            oti: true
         };
         let x = array!([0.,1.],[2.,3.]);
         let y = array!([4.,5.],[6.,7.]);

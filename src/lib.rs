@@ -35,11 +35,11 @@ struct ChromaCrossSimilarity {
 impl ChromaCrossSimilarity {
     #[new]
     #[args(
-    otiBinary = "true",
-    frameStackSize = "9",
+    otiBinary = "false",
+    frameStackSize = "1",
     )]
     fn new(otiBinary: bool, frameStackSize: usize) -> (Self, Algorithm) {
-        (ChromaCrossSimilarity{otiBinary, frameStackSize, frame_stack_stride: 1, noti: 12, oti: false, binarize_percentile: 0.095}, Algorithm::new())
+        (ChromaCrossSimilarity{otiBinary, frameStackSize, frame_stack_stride: 1, noti: 12, oti: true, binarize_percentile: 0.095}, Algorithm::new())
     }
 
     fn __call__<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
@@ -89,6 +89,9 @@ impl ChromaCrossSimilarity{
             let query_feature_size = p_distances.len();
             let reference_feature_size = p_distances[0].len();
             let mut threshold_reference = Vec::new();
+            print!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+            print!("{:?}\n", p_distances);
+            print!("Refernce feature size: {}\n", reference_feature_size);
             let mut threshold_query = Vec::new();
             let mut csm = Array2::default([query_feature_size, reference_feature_size]);
             for j in 0..reference_feature_size {
@@ -103,6 +106,7 @@ impl ChromaCrossSimilarity{
                     _status = false;
                 }
             }
+            print!("{:?}\n", threshold_reference);
             for k in 0..query_feature_size {
                 threshold_query.push(percentile(p_distances[k].to_vec(), 100.*self.binarize_percentile));
                 for l in 0..reference_feature_size {
@@ -121,6 +125,7 @@ fn percentile(array: Vec<f64>, mut q_percentile: f64) -> f64 {
     //    throw EssentiaException("percentile: trying to calculate percentile of empty array");
     let mut sorted_array = array;
     sorted_array.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    print!("{:?}/n", sorted_array);
     q_percentile /= 100.;
     let sorted_array_size = sorted_array.len();
     let mut k;
@@ -129,8 +134,9 @@ fn percentile(array: Vec<f64>, mut q_percentile: f64) -> f64 {
     } else {
         k = sorted_array_size as f64 * q_percentile;
     }
+    print!("{}\n", k);
     let d0 = sorted_array[k.floor() as usize] * (k.ceil() - k);
-    let d1 = sorted_array[k.ceil() as usize] * (k.floor() -k);
+    let d1 = sorted_array[k.ceil() as usize] * (k - k.floor());
     return d0 + d1
 }
 
@@ -148,6 +154,9 @@ fn pairwise_distance(m: Vec<Vec<f64>>,n: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     // if m.is_empty() || n.is_empty() {
     //     throw EssentiaException("pairwiseDistance: found empty array as input!");
     // }
+    print!("m length: {}\n", m.len());
+    print!("n length: {}\n", n.len());
+
     let mut pdist = Vec::new();
     let mut pdist_column = Vec::new();
     for i in 0..m.len() {
@@ -334,7 +343,7 @@ mod tests {
     #[test]
     fn simple_test() {
         let test_object = ChromaCrossSimilarity{
-            otiBinary: true,
+            otiBinary: false,
             frameStackSize: 1,
             frame_stack_stride: 9,
             noti: 12,

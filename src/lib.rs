@@ -28,7 +28,7 @@ struct ChromaCrossSimilarity {
     frame_stack_stride: usize,
     noti: u32,
     oti: bool,
-
+    binarize_percentile: f64,
 }
 
 #[pymethods]
@@ -39,7 +39,7 @@ impl ChromaCrossSimilarity {
     frameStackSize = "9",
     )]
     fn new(otiBinary: bool, frameStackSize: usize) -> (Self, Algorithm) {
-        (ChromaCrossSimilarity{otiBinary, frameStackSize, frame_stack_stride: 1, noti: 12, oti: true}, Algorithm::new())
+        (ChromaCrossSimilarity{otiBinary, frameStackSize, frame_stack_stride: 1, noti: 12, oti: false, binarize_percentile: 0.095}, Algorithm::new())
     }
 
     fn __call__<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
@@ -83,12 +83,85 @@ impl ChromaCrossSimilarity{
                 let oti_idx = optimal_transposition_index(query_feature_vecs.to_vec(), reference_feature_vecs.to_vec(), self.noti);
                 rotate_chroma(&mut reference_feature_vecs, oti_idx as i32)
             }
-            // let query_feature_stack = stack_chroma_frames(query_feature_vecs.to_vec(), self.frameStackSize, self.frame_stack_stride);
-            // let reference_feature_stack = stack_chroma_frames(reference_feature_vecs.to_vec(), self.frameStackSize, self.frame_stack_stride);
-            return from_vecs_to_ndarray(query_feature_vecs);
+            let query_feature_stack = stack_chroma_frames(query_feature_vecs.to_vec(), self.frameStackSize, self.frame_stack_stride);
+            let reference_feature_stack = stack_chroma_frames(reference_feature_vecs.to_vec(), self.frameStackSize, self.frame_stack_stride);
+            let p_distances = pairwise_distance(query_feature_stack, reference_feature_stack);
+            let query_feature_size = p_distances.len();
+            let reference_feature_size = p_distances[0].len();
+            let mut threshold_reference = Vec::new();
+            let mut threshold_query = Vec::new();
+            let mut csm = Array2::default([query_feature_size, reference_feature_size]);
+            for j in 0..reference_feature_size {
+                let mut _status = true;
+                for i in 0..query_feature_size {
+                    if _status {
+                        threshold_reference.push(percentile(get_columns_values_at_vec_index(p_distances.to_vec(), j as i32), 100.*self.binarize_percentile));
+                    }
+                    if p_distances[i][j] <= threshold_reference[j] {
+                        csm[[i,j]] = 1.;
+                    }
+                    _status = false;
+                }
+            }
+            for k in 0..query_feature_size {
+                threshold_query.push(percentile(p_distances[k].to_vec(), 100.*self.binarize_percentile));
+                for l in 0..reference_feature_size {
+                    if p_distances[k][l] > threshold_query[k] {
+                        csm[[k,l]] = 0.;
+                    }
+                }
+            }
+            return csm;
         }
-
     }
+}
+
+fn percentile(array: Vec<f64>, mut q_percentile: f64) -> f64 {
+    //  if (array.empty())
+    //    throw EssentiaException("percentile: trying to calculate percentile of empty array");
+    let mut sorted_array = array;
+    sorted_array.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    q_percentile /= 100.;
+    let sorted_array_size = sorted_array.len();
+    let mut k;
+    if sorted_array_size > 1 {
+        k = (sorted_array_size - 1) as f64 * q_percentile;
+    } else {
+        k = sorted_array_size as f64 * q_percentile;
+    }
+    let d0 = sorted_array[k.floor() as usize] * (k.ceil() - k);
+    let d1 = sorted_array[k.ceil() as usize] * (k.floor() -k);
+    return d0 + d1
+}
+
+fn get_columns_values_at_vec_index (input_matrix: Vec<Vec<f64>>, index: i32) -> Vec<f64> {
+    // in essentia its called columns - depends on imagingation
+    // TODO check if name conventions for columns and rows are good
+    let mut row = Vec::new();
+    for i in 0..input_matrix.len() {
+        row.push(input_matrix[i][index as usize])
+    }
+    return row
+}
+
+fn pairwise_distance(m: Vec<Vec<f64>>,n: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    // if m.is_empty() || n.is_empty() {
+    //     throw EssentiaException("pairwiseDistance: found empty array as input!");
+    // }
+    let mut pdist = Vec::new();
+    let mut pdist_column = Vec::new();
+    for i in 0..m.len() {
+        for j in 0..n.len() {
+            let item = dot(&m[i], &m[i]) + dot(&n[j], &n[j]) - 2.*dot(&m[i], &n[j]);
+            pdist_column.push(item.sqrt())
+        }
+        pdist.push(pdist_column.to_vec());
+        pdist_column.clear();
+    }
+    // if (pdist.empty())
+    // throw EssentiaException("pairwiseDistance: outputs an empty similarity matrix!");
+    return pdist;
+
 }
 
 fn rotate_chroma(input_matrix: &mut Vec<Vec<f64>>, oti: i32) {
@@ -265,7 +338,8 @@ mod tests {
             frameStackSize: 1,
             frame_stack_stride: 9,
             noti: 12,
-            oti: true
+            oti: false,
+            binarize_percentile: 0.095
         };
         let x = array!([0.,1.],[2.,3.]);
         let y = array!([4.,5.],[6.,7.]);

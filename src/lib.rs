@@ -62,11 +62,11 @@ impl ChromaCrossSimilarity {
                     x: PyReadonlyArrayDyn<f64>,
                     y: PyReadonlyArrayDyn<f64>,
     ) -> Result<&'py PyArray<f64, Ix2>, PyErr> {
-        self.py_compute(py,x,y)
+        self.compute_py(py,x,y)
     }
 
     #[pyo3(name = "compute")]
-    fn py_compute<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
+    fn compute_py<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
                        py: Python<'py>,
                        x: PyReadonlyArrayDyn<f64>,
                        y: PyReadonlyArrayDyn<f64>,
@@ -90,12 +90,14 @@ impl ChromaCrossSimilarity{
             return chroma_cross_binary_sim_matrix(stack_frames_a, stack_frames_b, self.noti, self.match_coefficient, self.mismatch_coefficient)
         }
         else {
+            let query_feature_vecs = query_feature;
+            let mut reference_feature_vecs = reference_feature;
             if self.oti {
-                let oti_idx = optimal_transposition_index(query_feature.to_vec(), reference_feature.to_vec(), self.noti);
-                rotate_chroma(&mut reference_feature.to_vec(), oti_idx as i32)
+                let oti_idx = optimal_transposition_index(query_feature_vecs.to_vec(), reference_feature_vecs.to_vec(), self.noti);
+                rotate_chroma(&mut reference_feature_vecs, oti_idx)
             }
-            let query_feature_stack = stack_chroma_frames(query_feature.to_vec(), self.frame_stack_size, self.frame_stack_stride);
-            let reference_feature_stack = stack_chroma_frames(reference_feature.to_vec(), self.frame_stack_size, self.frame_stack_stride);
+            let query_feature_stack = stack_chroma_frames(query_feature_vecs.to_vec(), self.frame_stack_size, self.frame_stack_stride);
+            let reference_feature_stack = stack_chroma_frames(reference_feature_vecs.to_vec(), self.frame_stack_size, self.frame_stack_stride);
             let p_distances = pairwise_distance(query_feature_stack, reference_feature_stack);
             let query_feature_size = p_distances.len();
             let reference_feature_size = p_distances[0].len();
@@ -106,7 +108,7 @@ impl ChromaCrossSimilarity{
                 let mut _status = true;
                 for i in 0..query_feature_size {
                     if _status {
-                        threshold_reference.push(percentile(get_columns_values_at_vec_index(p_distances.to_vec(), j as i32), 100.*self.binarize_percentile));
+                        threshold_reference.push(percentile(get_columns_values_at_vec_index(p_distances.to_vec(), j), 100.*self.binarize_percentile));
                     }
                     if p_distances[i][j] <= threshold_reference[j] {
                         csm[i][j] = 1.;
@@ -144,7 +146,7 @@ fn from_ndarray_to_vectors(array: ArrayViewD<f64>) -> Vec<Vec<f64>> {
             for (j, _col) in row.iter().enumerate() {
                 column_vector.push(array[[i,j]]);
             }
-            vec_array.push(column_vector.to_vec());
+            vec_array.push(column_vector.clone());
             column_vector.clear();
         }
         return vec_array

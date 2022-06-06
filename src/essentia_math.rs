@@ -5,16 +5,13 @@ pub fn percentile(array: Vec<f64>, mut q_percentile: f64) -> f64 {
     //    throw EssentiaException("percentile: trying to calculate percentile of empty array");
     let mut sorted_array = array;
     sorted_array.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    print!("{:?}/n", sorted_array);
     q_percentile /= 100.;
-    let sorted_array_size = sorted_array.len();
     let k;
-    if sorted_array_size > 1 {
-        k = (sorted_array_size - 1) as f64 * q_percentile;
+    if sorted_array.len() > 1 {
+        k = (sorted_array.len() - 1) as f64 * q_percentile;
     } else {
-        k = sorted_array_size as f64 * q_percentile;
+        k = sorted_array.len() as f64 * q_percentile;
     }
-    print!("{}\n", k);
     let d0 = sorted_array[k.floor() as usize] * (k.ceil() - k);
     let d1 = sorted_array[k.ceil() as usize] * (k - k.floor());
     return d0 + d1
@@ -32,7 +29,7 @@ pub fn pairwise_distance(m: Vec<Vec<f64>>,n: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
             let item = dot(&m[i], &m[i]) + dot(&n[j], &n[j]) - 2.*dot(&m[i], &n[j]);
             pdist_column.push(item.sqrt())
         }
-        pdist.push(pdist_column.to_vec());
+        pdist.push(pdist_column.clone());
         pdist_column.clear();
     }
     // if (pdist.empty())
@@ -40,11 +37,11 @@ pub fn pairwise_distance(m: Vec<Vec<f64>>,n: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     return pdist;
 }
 
-pub fn rotate_chroma(input_matrix: &mut Vec<Vec<f64>>, oti: i32) {
+pub fn rotate_chroma(input_matrix: &mut Vec<Vec<f64>>, oti: usize) {
     // if (inputMatrix.empty())
     // throw EssentiaException("rotateChroma: trying to rotate an empty matrix");
     for i in 0..input_matrix.len() {
-        input_matrix[i].rotate_right(oti as usize)
+        input_matrix[i].rotate_right(oti)
     }
 }
 

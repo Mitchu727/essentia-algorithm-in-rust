@@ -1,10 +1,12 @@
+mod essentia_math;
+
 use numpy::ndarray::{Array, Array2, ArrayViewD, Axis, Ix2};
 use numpy::{IntoPyArray, PyArray, PyReadonlyArrayDyn};
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 use pyo3::prelude::*;
 use pyo3::create_exception;
 use rulinalg::utils::{dot, argmax};
-
+use essentia_math::{percentile, sum_frames, normalize, rotate_chroma, pairwise_distance};
 
 #[pyclass(subclass)]
 struct Algorithm {
@@ -117,24 +119,25 @@ impl ChromaCrossSimilarity{
     }
 }
 
-fn percentile(array: Vec<f64>, mut q_percentile: f64) -> f64 {
-    //  if (array.empty())
-    //    throw EssentiaException("percentile: trying to calculate percentile of empty array");
-    let mut sorted_array = array;
-    sorted_array.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    print!("{:?}/n", sorted_array);
-    q_percentile /= 100.;
-    let sorted_array_size = sorted_array.len();
-    let k;
-    if sorted_array_size > 1 {
-        k = (sorted_array_size - 1) as f64 * q_percentile;
-    } else {
-        k = sorted_array_size as f64 * q_percentile;
+fn stack_chroma_frames(frames: Vec<Vec<f64>>, frame_stack_size: usize, frame_stack_stride: usize) -> Vec<Vec<f64>> {
+    if frame_stack_size == 1 {
+        return frames;
     }
-    print!("{}\n", k);
-    let d0 = sorted_array[k.floor() as usize] * (k.ceil() - k);
-    let d1 = sorted_array[k.ceil() as usize] * (k - k.floor());
-    return d0 + d1
+    let mut stop_idx: usize;
+    let increment = frame_stack_size + frame_stack_stride;
+
+    let mut stacked_frames = Vec::new();
+    let mut stack = Vec::new();
+    for i in (0..(frames.len() - increment)).step_by(frame_stack_stride) {
+        stop_idx = i + increment;
+        for start_time in (i..stop_idx).step_by(frame_stack_stride) {
+            let sth = frames[start_time].to_vec();
+            stack.extend_from_slice(&sth)
+        }
+        stacked_frames.push(stack.to_vec());
+        stack.clear()
+    }
+    return stacked_frames;
 }
 
 fn get_columns_values_at_vec_index (input_matrix: Vec<Vec<f64>>, index: i32) -> Vec<f64> {
@@ -145,37 +148,6 @@ fn get_columns_values_at_vec_index (input_matrix: Vec<Vec<f64>>, index: i32) -> 
         row.push(input_matrix[i][index as usize])
     }
     return row
-}
-
-fn pairwise_distance(m: Vec<Vec<f64>>,n: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
-    // if m.is_empty() || n.is_empty() {
-    //     throw EssentiaException("pairwiseDistance: found empty array as input!");
-    // }
-    print!("m length: {}\n", m.len());
-    print!("n length: {}\n", n.len());
-
-    let mut pdist = Vec::new();
-    let mut pdist_column = Vec::new();
-    for i in 0..m.len() {
-        for j in 0..n.len() {
-            let item = dot(&m[i], &m[i]) + dot(&n[j], &n[j]) - 2.*dot(&m[i], &n[j]);
-            pdist_column.push(item.sqrt())
-        }
-        pdist.push(pdist_column.to_vec());
-        pdist_column.clear();
-    }
-    // if (pdist.empty())
-    // throw EssentiaException("pairwiseDistance: outputs an empty similarity matrix!");
-    return pdist;
-
-}
-
-fn rotate_chroma(input_matrix: &mut Vec<Vec<f64>>, oti: i32) {
-    // if (inputMatrix.empty())
-    // throw EssentiaException("rotateChroma: trying to rotate an empty matrix");
-    for i in 0..input_matrix.len() {
-        input_matrix[i].rotate_right(oti as usize)
-    }
 }
 
 fn optimal_transposition_index(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64>>, n_shifts: u32) -> usize {
@@ -197,35 +169,6 @@ fn global_average_chroma(input_feature: Vec<Vec<f64>>) -> Vec<f64> {
     let mut global_chroma = sum_frames(input_feature);
     normalize(&mut global_chroma);
     return global_chroma;
-}
-
-fn normalize(array: &mut Vec<f64>) {
-    if array.is_empty() {
-        return
-    }
-    // let max_element = array.iter().max_by(|a, b| a.total_cmp(b));
-    let max_element = array.iter().copied().fold(f64::NAN, f64::max);
-    if max_element != 0. {
-        for i in 0..array.len() {
-            array[i] /= max_element;
-        }
-    }
-}
-
-
-fn sum_frames(frames: Vec<Vec<f64>>) -> Vec<f64> {
-    // if (frames.empty()) {
-    //     throw EssentiaException("sumFrames: trying to calculate sum of empty input frames");
-    // }
-    let number_of_frames = frames.len();
-    let vsize = frames[0].len();
-    let mut result = vec![0.; vsize];
-    for j in 0..vsize {
-        for i in 0..number_of_frames {
-            result[j] += frames[i][j]
-        }
-    }
-    return result
 }
 
 fn chroma_cross_binary_sim_matrix(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64>>, n_shifts: u32, match_coef:f64, mismatch_coef: f64) -> Array2<f64> {
@@ -257,26 +200,7 @@ fn chroma_cross_binary_sim_matrix(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64
     return sim_matrix
 }
 
-fn stack_chroma_frames(frames: Vec<Vec<f64>>, frame_stack_size: usize, frame_stack_stride: usize) -> Vec<Vec<f64>> {
-    if frame_stack_size == 1 {
-        return frames;
-    }
-    let mut stop_idx: usize;
-    let increment = frame_stack_size + frame_stack_stride;
 
-    let mut stacked_frames = Vec::new();
-    let mut stack = Vec::new();
-    for i in (0..(frames.len() - increment)).step_by(frame_stack_stride) {
-        stop_idx = i + increment;
-        for start_time in (i..stop_idx).step_by(frame_stack_stride) {
-            let sth = frames[start_time].to_vec();
-            stack.extend_from_slice(&sth)
-        }
-        stacked_frames.push(stack.to_vec());
-        stack.clear()
-    }
-    return stacked_frames;
-}
 
     // fn from_vectors_to_ndarray(vec_array :Vec<Vec<f64>>) -> Array2<f64> {
     //     let mut array = Array2::<f64>::default((vec_array.len(), vec_array[0].len()));
@@ -288,7 +212,7 @@ fn stack_chroma_frames(frames: Vec<Vec<f64>>, frame_stack_size: usize, frame_sta
     //     return array
     // }
 
-    fn from_ndarray_to_vectors(array: ArrayViewD<f64>) -> Vec<Vec<f64>> {
+fn from_ndarray_to_vectors(array: ArrayViewD<f64>) -> Vec<Vec<f64>> {
         let mut vec_array = Vec::new();
         // for i in array.axis_iter(Axis(0)){
         //     vec_array.push(array.slice(s![.., i]).)

@@ -24,8 +24,6 @@ pub fn pairwise_distance(m: Vec<Vec<f64>>,n: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     // if m.is_empty() || n.is_empty() {
     //     throw EssentiaException("pairwiseDistance: found empty array as input!");
     // }
-    print!("m length: {}\n", m.len());
-    print!("n length: {}\n", n.len());
 
     let mut pdist = Vec::new();
     let mut pdist_column = Vec::new();

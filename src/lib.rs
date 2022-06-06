@@ -63,14 +63,14 @@ impl ChromaCrossSimilarity {
         }
         let x = x.as_array();
         let y = y.as_array();
-        let z = self.compute(from_ndarray_to_vectors(x),from_ndarray_to_vectors(y));
+        let z = from_vectors_to_ndarray(self.compute(from_ndarray_to_vectors(x),from_ndarray_to_vectors(y)));
         Ok(z.into_pyarray(py))
     }
 
 }
 
 impl ChromaCrossSimilarity{
-    fn compute (&self, query_feature: Vec<Vec<f64>>, reference_feature: Vec<Vec<f64>>) -> Array<f64, Ix2> {
+    fn compute (&self, query_feature: Vec<Vec<f64>>, reference_feature: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
         let mathc_coef = 1.;
         let mismatch_coef = 0.;
         if self.oti_binary {
@@ -92,7 +92,8 @@ impl ChromaCrossSimilarity{
             let reference_feature_size = p_distances[0].len();
             let mut threshold_reference = Vec::new();
             let mut threshold_query = Vec::new();
-            let mut csm = Array2::default([query_feature_size, reference_feature_size]);
+            // let mut csm = Array2::default([query_feature_size, reference_feature_size]);
+            let mut csm = generate_two_dimensional_array(query_feature_size, reference_feature_size);
             for j in 0..reference_feature_size {
                 let mut _status = true;
                 for i in 0..query_feature_size {
@@ -100,7 +101,7 @@ impl ChromaCrossSimilarity{
                         threshold_reference.push(percentile(get_columns_values_at_vec_index(p_distances.to_vec(), j as i32), 100.*self.binarize_percentile));
                     }
                     if p_distances[i][j] <= threshold_reference[j] {
-                        csm[[i,j]] = 1.;
+                        csm[i][j] = 1.;
                     }
                     _status = false;
                 }
@@ -109,7 +110,7 @@ impl ChromaCrossSimilarity{
                 threshold_query.push(percentile(p_distances[k].to_vec(), 100.*self.binarize_percentile));
                 for l in 0..reference_feature_size {
                     if p_distances[k][l] > threshold_query[k] {
-                        csm[[k,l]] = 0.;
+                        csm[k][l] = 0.;
                     }
                 }
             }
@@ -170,10 +171,12 @@ fn global_average_chroma(input_feature: Vec<Vec<f64>>) -> Vec<f64> {
     return global_chroma;
 }
 
-fn chroma_cross_binary_sim_matrix(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64>>, n_shifts: u32, match_coef:f64, mismatch_coef: f64) -> Array2<f64> {
+fn chroma_cross_binary_sim_matrix(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64>>, n_shifts: u32, match_coef:f64, mismatch_coef: f64) -> Vec<Vec<f64>> {
     let mut value_at_shifts = Vec::new();
     let mut oti_index;
-    let mut sim_matrix = Array2::default([chroma_a.len(), chroma_b.len()]);
+    // let mut sim_matrix = Array2::default([chroma_a.len(), chroma_b.len()]);
+    // let sim_matrix = [mut [mut 0f64, ..chroma_a.len()]]
+    let mut sim_matrix = generate_two_dimensional_array(chroma_a.len(), chroma_b.len());
     for i in 0..chroma_a.len() {
         for j in 0..chroma_b.len() {
             for k in 0..n_shifts {
@@ -189,27 +192,38 @@ fn chroma_cross_binary_sim_matrix(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64
             // };
             value_at_shifts.clear();
             if oti_index.0 == 0 || oti_index.0 == 1 {
-                 sim_matrix[[i,j]] = match_coef
+                 sim_matrix[i][j] = match_coef
             }
             else {
-                sim_matrix[[i,j]] = mismatch_coef
+                sim_matrix[i][j] = mismatch_coef
             }
         }
     }
     return sim_matrix
 }
 
+fn generate_two_dimensional_array(height: usize, width: usize) -> (Vec<Vec<f64>>) {
+    let mut array = Vec::new();
+    let mut column = Vec::new();
+    for i in 0..height {
+        for j in 0..width {
+            column.push(0.)
+        }
+        array.push(column.to_vec());
+        column.clear();
+    }
+    return array
+}
 
-
-    // fn from_vectors_to_ndarray(vec_array :Vec<Vec<f64>>) -> Array2<f64> {
-    //     let mut array = Array2::<f64>::default((vec_array.len(), vec_array[0].len()));
-    //     for (i, mut row) in array.axis_iter_mut(Axis(0)).enumerate() {
-    //         for (j, col) in row.iter_mut().enumerate() {
-    //             *col = vec_array[i][j];
-    //         }
-    //     }
-    //     return array
-    // }
+fn from_vectors_to_ndarray(vec_array :Vec<Vec<f64>>) -> Array2<f64> {
+    let mut array = Array2::<f64>::default((vec_array.len(), vec_array[0].len()));
+    for (i, mut row) in array.axis_iter_mut(Axis(0)).enumerate() {
+        for (j, col) in row.iter_mut().enumerate() {
+            *col = vec_array[i][j];
+        }
+    }
+    return array
+}
 
 fn from_ndarray_to_vectors(array: ArrayViewD<f64>) -> Vec<Vec<f64>> {
         let mut vec_array = Vec::new();

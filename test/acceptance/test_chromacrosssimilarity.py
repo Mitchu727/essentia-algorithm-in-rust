@@ -33,30 +33,29 @@ class TestChromaCrossSimilarity(TestCase):
                     [0.36084786, 0.37151814, 0.40913638, 0.15566002, 0.40571737, 1., 0.6263613, 0.65415925, 0.53127843, 0.7900088, 0.50427467, 0.51956046],
                     [0.42861825, 0.36887613, 0.05665652, 0.20978431, 0.1992704, 0.14884946, 1., 0.24148795, 0.43031794, 0.14265466, 0.17224492, 0.36498153]])
 
-    # expected binary similarity matrix using the cross recurrence quantification method with oti computed using the python implementation from https://github.com/albincorreya/ChromaCoverId
+    # expected binary similarity matrix using the cross recurrence quantification method with oti computed
+    # using the python implementation from https://github.com/albincorreya/ChromaCoverId
     expected_crp_simmatrix = np.array([[0., 0., 1.],
                                     [0., 0., 0.]])
 
-    # expected binary similarity matrix using oti-based similarity method using the python implementation from https://github.com/albincorreya/ChromaCoverId
+    # expected binary similarity matrix using oti-based similarity method using the python implementation from:
+    # https://github.com/albincorreya/ChromaCoverId
     expected_oti_simmatrix = np.array([[1., 0., 0.],
                                     [1., 0., 0.]])
 
-    def testPass(self):
-        self.assertTrue(True)
-
     def testEmpty(self):
-        self.assertComputeFails(ChromaCrossSimilarity(otiBinary=False, frameStackSize=1), np.array([]), np.array([])) #zmieniono na pusty numpy
-        self.assertComputeFails(ChromaCrossSimilarity(otiBinary=True, frameStackSize=1), np.array([]), np.array([])) #zmieniono na pusty numpy
+        self.assertComputeFails(ChromaCrossSimilarity(oti_binary=False, frame_stack_size=1), np.array([]), np.array([])) #zmieniono na pusty numpy
+        self.assertComputeFails(ChromaCrossSimilarity(oti_binary=True, frame_stack_size=1), np.array([]), np.array([])) #zmieniono na pusty numpy
 
     def testRegressionStandard(self):
         """Test standard ChromaCrossSimilarity algo rqa method with 'oti=True'"""
-        csm = ChromaCrossSimilarity(frameStackSize=1)
+        csm = ChromaCrossSimilarity(frame_stack_size=1)
         result_simmatrix = csm(self.query_hpcp, self.reference_hpcp)
         self.assertAlmostEqualMatrix(self.expected_crp_simmatrix, result_simmatrix)
 
     def testRegressionOTIBinary(self):
         """Test regression of standard ChromaCrossSimilarity when otiBinary=True"""
-        csm = ChromaCrossSimilarity(otiBinary=True, frameStackSize=1)
+        csm = ChromaCrossSimilarity(oti_binary=True, frame_stack_size=1)
         sim_matrix = csm(self.query_hpcp, self.reference_hpcp)
         self.assertAlmostEqual(np.mean(self.expected_oti_simmatrix), np.mean(sim_matrix))
         self.assertAlmostEqualMatrix(self.expected_oti_simmatrix, sim_matrix)

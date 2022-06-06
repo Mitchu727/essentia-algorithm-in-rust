@@ -26,9 +26,9 @@ pub fn chroma_cross_binary_sim_matrix(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec
     return sim_matrix
 }
 
-pub fn stack_chroma_frames(frames: Vec<Vec<f64>>, frame_stack_size: usize, frame_stack_stride: usize) -> Vec<Vec<f64>> {
+pub fn stack_chroma_frames(frames: &Vec<Vec<f64>>, frame_stack_size: usize, frame_stack_stride: usize) -> Vec<Vec<f64>> {
     if frame_stack_size == 1 {
-        return frames;
+        return frames.clone();
     }
 
     let increment = frame_stack_size + frame_stack_stride;
@@ -47,7 +47,7 @@ pub fn stack_chroma_frames(frames: Vec<Vec<f64>>, frame_stack_size: usize, frame
     return stacked_frames;
 }
 
-pub fn get_columns_values_at_vec_index (input_matrix: Vec<Vec<f64>>, index: usize) -> Vec<f64> {
+pub fn get_columns_values_at_vec_index (input_matrix: &Vec<Vec<f64>>, index: usize) -> Vec<f64> {
     let mut row = Vec::new();
     for i in 0..input_matrix.len() {
         row.push(input_matrix[i][index])
@@ -55,9 +55,9 @@ pub fn get_columns_values_at_vec_index (input_matrix: Vec<Vec<f64>>, index: usiz
     return row
 }
 
-pub fn optimal_transposition_index(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f64>>, n_shifts: u32) -> usize {
-    let global_chroma_a= global_average_chroma(chroma_a);
-    let mut global_chroma_b = global_average_chroma(chroma_b);
+pub fn optimal_transposition_index(chroma_a: &Vec<Vec<f64>>, chroma_b: &Vec<Vec<f64>>, n_shifts: u32) -> usize {
+    let global_chroma_a= global_average_chroma(&chroma_a);
+    let mut global_chroma_b = global_average_chroma(&chroma_b);
     let mut value_at_shifts = Vec::new();
     let mut iter_idx = 0;
     for i in 0..n_shifts {
@@ -70,8 +70,8 @@ pub fn optimal_transposition_index(chroma_a: Vec<Vec<f64>>, chroma_b: Vec<Vec<f6
     return argmax(&value_at_shifts).0
 }
 
-pub fn global_average_chroma(input_feature: Vec<Vec<f64>>) -> Vec<f64> {
-    let mut global_chroma = sum_frames(input_feature);
+pub fn global_average_chroma(input_feature: &Vec<Vec<f64>>) -> Vec<f64> {
+    let mut global_chroma = sum_frames(&input_feature);
     normalize(&mut global_chroma);
     return global_chroma;
 }

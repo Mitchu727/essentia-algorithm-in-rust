@@ -49,11 +49,11 @@ impl ChromaCrossSimilarity {
                     x: PyReadonlyArrayDyn<f64>,
                     y: PyReadonlyArrayDyn<f64>,
     ) -> Result<&'py PyArray<f64, Ix2>, PyErr> {
-        self.compute(py,x,y)
+        self.py_compute(py,x,y)
     }
 
-    // wrapper of `compute_internal`
-    fn compute<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
+    #[pyo3(name = "compute")]
+    fn py_compute<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
                        py: Python<'py>,
                        x: PyReadonlyArrayDyn<f64>,
                        y: PyReadonlyArrayDyn<f64>,
@@ -63,24 +63,24 @@ impl ChromaCrossSimilarity {
         }
         let x = x.as_array();
         let y = y.as_array();
-        let z = self.compute_internal(x,y);
+        let z = self.compute(from_ndarray_to_vectors(x),from_ndarray_to_vectors(y));
         Ok(z.into_pyarray(py))
     }
 
 }
 
 impl ChromaCrossSimilarity{
-    fn compute_internal (&self, query_feature: ArrayViewD<'_, f64>, reference_feature: ArrayViewD<'_, f64>) -> Array<f64, Ix2> {
+    fn compute (&self, query_feature: Vec<Vec<f64>>, reference_feature: Vec<Vec<f64>>) -> Array<f64, Ix2> {
         let mathc_coef = 1.;
         let mismatch_coef = 0.;
         if self.oti_binary {
-            let stack_frames_a = stack_chroma_frames(from_ndarray_to_vectors(query_feature), self.frame_stack_size, self.frame_stack_stride);
-            let stack_frames_b = stack_chroma_frames(from_ndarray_to_vectors(reference_feature), self.frame_stack_size, self.frame_stack_stride);
+            let stack_frames_a = stack_chroma_frames(query_feature, self.frame_stack_size, self.frame_stack_stride);
+            let stack_frames_b = stack_chroma_frames(reference_feature, self.frame_stack_size, self.frame_stack_stride);
             return chroma_cross_binary_sim_matrix(stack_frames_a, stack_frames_b, self.noti, mathc_coef, mismatch_coef)
         }
         else {
-            let query_feature_vecs = from_ndarray_to_vectors(query_feature);
-            let mut reference_feature_vecs = from_ndarray_to_vectors(reference_feature);
+            let query_feature_vecs = query_feature;
+            let mut reference_feature_vecs = reference_feature;
             if self.oti {
                 let oti_idx = optimal_transposition_index(query_feature_vecs.to_vec(), reference_feature_vecs.to_vec(), self.noti);
                 rotate_chroma(&mut reference_feature_vecs, oti_idx as i32)
@@ -105,7 +105,6 @@ impl ChromaCrossSimilarity{
                     _status = false;
                 }
             }
-            print!("{:?}\n", threshold_reference);
             for k in 0..query_feature_size {
                 threshold_query.push(percentile(p_distances[k].to_vec(), 100.*self.binarize_percentile));
                 for l in 0..reference_feature_size {

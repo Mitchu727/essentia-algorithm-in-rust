@@ -18,8 +18,7 @@
 # version 3 along with this program. If not, see http://www.gnu.org/licenses/
 
 
-from unittest import *
-from unittest import TestCase as BaseTestCase
+from unittest import TestCase as BaseTestCase, TestLoader, TestSuite, TestResult
 import numpy
 import sys
 import numpy as np
@@ -217,8 +216,9 @@ def almostEqualArray(found, expected, precision):
                 diff = abs(y)
             else:
                 diff = abs((y - x) / abs(y))
-            if diff <= precision:
+            if diff > precision:
                 return False
+    return True
 
 
 def almostEqualAudioArray(found, expected, precision):

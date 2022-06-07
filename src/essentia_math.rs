@@ -1,8 +1,6 @@
 use rulinalg::utils::{dot};
 
 pub fn percentile(array: &Vec<f64>, mut q_percentile: f64) -> f64 {
-    //  if (array.empty())
-    //    throw EssentiaException("percentile: trying to calculate percentile of empty array");
     let mut sorted_array = array.clone();
     sorted_array.sort_by(|a, b| a.partial_cmp(b).unwrap());
     q_percentile /= 100.;
@@ -18,10 +16,6 @@ pub fn percentile(array: &Vec<f64>, mut q_percentile: f64) -> f64 {
 }
 
 pub fn pairwise_distance(m: Vec<Vec<f64>>,n: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
-    // if m.is_empty() || n.is_empty() {
-    //     throw EssentiaException("pairwiseDistance: found empty array as input!");
-    // }
-
     let mut pairwise_distance = Vec::new();
     let mut pairwise_distance_column = Vec::new();
     for i in 0..m.len() {
@@ -32,14 +26,10 @@ pub fn pairwise_distance(m: Vec<Vec<f64>>,n: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
         pairwise_distance.push(pairwise_distance_column.clone());
         pairwise_distance_column.clear();
     }
-    // if (pdist.empty())
-    // throw EssentiaException("pairwiseDistance: outputs an empty similarity matrix!");
     return pairwise_distance;
 }
 
 pub fn rotate_chroma(input_matrix: &mut Vec<Vec<f64>>, oti: usize) {
-    // if (inputMatrix.empty())
-    // throw EssentiaException("rotateChroma: trying to rotate an empty matrix");
     for i in 0..input_matrix.len() {
         input_matrix[i].rotate_right(oti)
     }
@@ -49,7 +39,6 @@ pub fn normalize(array: &mut Vec<f64>) {
     if array.is_empty() {
         return
     }
-    // let max_element = array.iter().max_by(|a, b| a.total_cmp(b));
     let max_element = array.iter().copied().fold(f64::NAN, f64::max);
     if max_element != 0. {
         for i in 0..array.len() {
@@ -59,9 +48,6 @@ pub fn normalize(array: &mut Vec<f64>) {
 }
 
 pub fn sum_frames(frames: &Vec<Vec<f64>>) -> Vec<f64> {
-    // if (frames.empty()) {
-    //     throw EssentiaException("sumFrames: trying to calculate sum of empty input frames");
-    // }
     let number_of_frames = frames.len();
     let vector_size = frames[0].len();
     let mut result = vec![0.; vector_size];

@@ -91,7 +91,6 @@ pub fn generate_two_dimensional_array(width: usize, height: usize) -> Vec<Vec<f6
 }
 
 // Tests -------------------------------------------------------------------------------------------
-#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -105,22 +104,4 @@ mod tests {
                 should be always greater than '(frameStackSize * frameStackStride) + 1', ie. (7)"))
         )
     }
-
-
-    // #[test]
-    // fn simple_test() {
-    //     let test_object = ChromaCrossSimilarity{
-    //         oti_binary: false,
-    //         frame_stack_size: 1,
-    //         frame_stack_stride: 9,
-    //         noti: 12,
-    //         oti: false,
-    //         binarize_percentile: 0.095
-    //     };
-    //     let x = array!([0.,1.],[2.,3.]);
-    //     let y = array!([4.,5.],[6.,7.]);
-    //     let outcome = test_object.compute_internal(x.view().into_dyn(),y.view().into_dyn());
-    //     assert_eq!(array!([6.0]), outcome)
-    // }
-
 }

@@ -15,12 +15,6 @@ struct Algorithm {
     processing_mode: String,
 }
 
-//TODO
-// wyjątki a raczej resulty
-// wincej referencji -> easy
-// TESTY -> ilość bliżej nieograniczona
-// dokumentacja -> strony A4 diagram, dalej easy
-
 #[pymethods]
 impl Algorithm {
     #[new]
@@ -163,28 +157,4 @@ fn essentia_rust(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<ChromaCrossSimilarity>()?;
     m.add("EssentiaException", _py.get_type::<EssentiaException>())?;
     Ok(())
-}
-
-// Tests -------------------------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // #[test]
-    // fn simple_test() {
-    //     let test_object = ChromaCrossSimilarity{
-    //         oti_binary: false,
-    //         frame_stack_size: 1,
-    //         frame_stack_stride: 9,
-    //         noti: 12,
-    //         oti: false,
-    //         binarize_percentile: 0.095
-    //     };
-    //     let x = array!([0.,1.],[2.,3.]);
-    //     let y = array!([4.,5.],[6.,7.]);
-    //     let outcome = test_object.compute_internal(x.view().into_dyn(),y.view().into_dyn());
-    //     assert_eq!(array!([6.0]), outcome)
-    // }
-
 }

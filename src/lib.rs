@@ -7,14 +7,19 @@ use pyo3::{pymodule, types::PyModule, PyResult, Python};
 use pyo3::prelude::*;
 use pyo3::create_exception;
 use essentia_math::{percentile, sum_frames, normalize, rotate_chroma, pairwise_distance};
-use chroma_cross_similarity_utils::{stack_chroma_frames, };
-use crate::chroma_cross_similarity_utils::{chroma_cross_binary_sim_matrix, generate_two_dimensional_array, get_columns_values_at_vec_index, optimal_transposition_index};
+use chroma_cross_similarity_utils::{stack_chroma_frames, chroma_cross_binary_sim_matrix, generate_two_dimensional_array, get_columns_values_at_vec_index, optimal_transposition_index};
 
 #[pyclass(subclass)]
 struct Algorithm {
     #[pyo3(get)]
     processing_mode: String,
 }
+
+//TODO
+// wyjątki a raczej resulty
+// wincej referencji -> easy
+// TESTY -> ilość bliżej nieograniczona
+// dokumentacja -> strony A4 diagram, dalej easy
 
 #[pymethods]
 impl Algorithm {
@@ -57,7 +62,7 @@ impl ChromaCrossSimilarity {
         }, Algorithm::new())
     }
 
-    fn __call__<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
+    fn __call__<'py>(&self,
                     py: Python<'py>,
                     x: PyReadonlyArrayDyn<f64>,
                     y: PyReadonlyArrayDyn<f64>,
@@ -66,7 +71,7 @@ impl ChromaCrossSimilarity {
     }
 
     #[pyo3(name = "compute")]
-    fn compute_py<'py>(&self, //na obecny moment może być statyczna, potem może się to zmienić
+    fn compute_py<'py>(&self,
                        py: Python<'py>,
                        x: PyReadonlyArrayDyn<f64>,
                        y: PyReadonlyArrayDyn<f64>,
@@ -85,8 +90,8 @@ impl ChromaCrossSimilarity {
 impl ChromaCrossSimilarity{
     fn compute (&self, query_feature: Vec<Vec<f64>>, reference_feature: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
         if self.oti_binary {
-            let stack_frames_a = stack_chroma_frames(&query_feature, self.frame_stack_size, self.frame_stack_stride);
-            let stack_frames_b = stack_chroma_frames(&reference_feature, self.frame_stack_size, self.frame_stack_stride);
+            let stack_frames_a = stack_chroma_frames(&query_feature, self.frame_stack_size, self.frame_stack_stride).unwrap();
+            let stack_frames_b = stack_chroma_frames(&reference_feature, self.frame_stack_size, self.frame_stack_stride).unwrap();
             return chroma_cross_binary_sim_matrix(stack_frames_a, stack_frames_b, self.noti, self.match_coefficient, self.mismatch_coefficient)
         }
         else {
@@ -95,8 +100,8 @@ impl ChromaCrossSimilarity{
                 let oti_idx = optimal_transposition_index(&query_feature, &reference_feature, self.noti);
                 rotate_chroma(&mut reference_feature_rotated, oti_idx)
             }
-            let query_feature_stack = stack_chroma_frames(&query_feature, self.frame_stack_size, self.frame_stack_stride);
-            let reference_feature_stack = stack_chroma_frames(&reference_feature_rotated, self.frame_stack_size, self.frame_stack_stride);
+            let query_feature_stack = stack_chroma_frames(&query_feature, self.frame_stack_size, self.frame_stack_stride).unwrap();
+            let reference_feature_stack = stack_chroma_frames(&reference_feature_rotated, self.frame_stack_size, self.frame_stack_stride).unwrap();
             let pairwise_distances = pairwise_distance(query_feature_stack, reference_feature_stack);
 
             let mut threshold_reference = Vec::new();
